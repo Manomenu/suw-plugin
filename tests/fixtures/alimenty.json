@@ -1,0 +1,609 @@
+{
+  "lang": "pl",
+  "title": "Drzewa ścigania alimenciarzy",
+  "eyebrow": "Ściganie alimenciarzy · drzewa decyzyjne",
+  "heading": "Czy ten biznes w ogóle ma sens?",
+  "rule": "Idziemy dalej, gdy przejdą **wolne ręce**, **kontrariańskość** i **skala**, a do tego **co najmniej jedna ścieżka klienta**.",
+  "asOf": "13.11.2026",
+  "overview": {
+    "title": "Cztery niezależne drzewa",
+    "text": "Trzy pierwsze nie zależą od tego, kto płaci, i każde musi przejść: inaczej pomysł odpada w całości. Czwarte wybiera klienta i wystarczy w nim jedna ścieżka. Drzewa można sprawdzać równolegle.",
+    "note": "W każdym drzewie pytania stoją od najtańszych do sprawdzenia (przepisy i dane, przy biurku) do najdroższych (rozmowy z ludźmi)."
+  },
+  "rows": [
+    [
+      "L",
+      "K",
+      "S"
+    ],
+    [
+      "C"
+    ]
+  ],
+  "trees": [
+    {
+      "id": "L",
+      "mode": "must",
+      "frame": "musi przejść · krok 2",
+      "need": "musi przejść",
+      "title": "Czy firma ma wolne ręce?",
+      "sub": "swoboda działania, niezależnie od klienta",
+      "desc": "Czy prywatna firma może w ogóle legalnie robić to, na czym stoi teza: ustalać ukryte dochody i majątek dłużnika i doprowadzić do tego, żeby pieniądze trafiły do wierzyciela. To pytanie nie zależy od tego, kto płaci. Jeśli tu coś odpada, odpada cały pomysł.",
+      "branches": [
+        {
+          "to": "L1"
+        }
+      ]
+    },
+    {
+      "id": "K",
+      "mode": "must",
+      "frame": "musi przejść · krok 1",
+      "need": "musi przejść",
+      "title": "Czy pomysł jest kontrariański?",
+      "sub": "konkurencja i jej jakość",
+      "desc": "Kto już ściga alimenciarzy w Polsce i jak dobrze mu idzie. Filtr Thiela z briefu: jeśli kilka dobrych firm, w tym technologiczna, robi to w skali, to zwykły zajęty rynek, a nie niedoceniona teza. Pusty rynek to dobry znak tylko wtedy, gdy drzewa wolnych rąk i skali wyjaśnią, dlaczego nikt tego nie robi.",
+      "branches": [
+        {
+          "to": "K1"
+        }
+      ]
+    },
+    {
+      "id": "S",
+      "mode": "must",
+      "frame": "musi przejść · krok 3",
+      "need": "musi przejść",
+      "title": "Czy rynek jest wart uwagi?",
+      "sub": "skala problemu i pieniądze w nim",
+      "desc": "Sedno tezy: dłużnicy mają pieniądze, tylko w szarej strefie. Jeśli większość z nich naprawdę nie ma z czego płacić, to nawet przy wolnych rękach i dobrym kliencie nie ma czego odzyskiwać. Do tego filtr 4 z briefu: przychód ma pozwolić dobrze płacić ludziom.",
+      "branches": [
+        {
+          "to": "S1"
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "mode": "any",
+      "frame": "wystarczy jedna ścieżka · krok 2 i 4",
+      "need": "wystarczy jedna ścieżka",
+      "title": "Kto jest klientem?",
+      "sub": "od tego zależy, jaki to będzie biznes",
+      "desc": "Każda ścieżka to inny biznes: inna sprzedaż, inne prawo, inne tempo pieniędzy. Wystarczy, że przejdzie jedna. Jeśli przejdzie kilka, zaczynamy od tej, która najszybciej da pierwszego płacącego klienta, a resztę trzymamy jako rozszerzenie. Rozliczenie od wyniku sprawdzają pytania R1, G3 i C1.",
+      "branches": [
+        {
+          "edge": "rodzic prywatnie",
+          "to": "R1"
+        },
+        {
+          "edge": "gmina",
+          "to": "G1"
+        },
+        {
+          "edge": "inny płatnik",
+          "to": "C1"
+        }
+      ],
+      "okNote": "Tu dochodzimy, gdy wszystkie pytania na tej ścieżce wyszły „tak”. Model operacyjny, technologia i zespół dla tego biznesu to etap po rozpoznaniu."
+    }
+  ],
+  "paths": {
+    "A": "rodzic prywatnie",
+    "B": "gmina",
+    "C": "inny płatnik"
+  },
+  "nodes": {
+    "L1": {
+      "type": "gate",
+      "tree": "L",
+      "status": "open",
+      "step": "Krok 2 · Prawo",
+      "q": "Czy prywatna firma może legalnie ustalać dochody i majątek osoby fizycznej?",
+      "check": [
+        "Ustawa o usługach detektywistycznych: zakres czynności i zakazy",
+        "RODO: podstawa przetwarzania danych dłużnika",
+        "Dostęp do rejestrów: KRS, CEIDG, księgi wieczyste, CEPiK, BIG"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "L2"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ cały pomysł odpada",
+          "meaning": "Ustalanie majątku jest zastrzeżone dla komornika i organów, a licencja detektywa nie wystarcza do tego, czego potrzebujemy."
+        }
+      ]
+    },
+    "L2": {
+      "type": "gate",
+      "tree": "L",
+      "status": "open",
+      "step": "Krok 2 · Prawo",
+      "q": "Czy ustalenia firmy da się zamienić na pieniądze, np. wskazując majątek komornikowi?",
+      "check": [
+        "KPC: wniosek wierzyciela o egzekucję i wskazanie składników majątku",
+        "Przepisy o poszukiwaniu majątku dłużnika przez komornika",
+        "Praktyka komorników przy alimentach: czy korzystają z prywatnych ustaleń"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "L3"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ cały pomysł odpada",
+          "meaning": "Prywatne ustalenia nie mają drogi do egzekucji: komornik nie musi z nich korzystać albo dowody są bezużyteczne."
+        }
+      ]
+    },
+    "L3": {
+      "type": "gate",
+      "tree": "L",
+      "status": "open",
+      "step": "Krok 2 · Prawo",
+      "q": "Czy da się wystartować bez barier, których nie przeskoczymy (licencja, wpis, ubezpieczenie)?",
+      "check": [
+        "Wpis do rejestru działalności detektywistycznej i wymogi wobec detektywa",
+        "Obowiązkowe ubezpieczenie OC",
+        "Co z tego musi mieć założyciel, a co wystarczy u zatrudnionej osoby"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "L_OK"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ cały pomysł odpada",
+          "meaning": "Wymogi formalne przekraczają możliwości startu bez kapitału albo trwają latami."
+        }
+      ]
+    },
+    "L_OK": {
+      "type": "ok",
+      "tree": "L",
+      "label": "Firma ma wolne ręce",
+      "sub": "może ustalać majątek i doprowadzić do egzekucji"
+    },
+    "K1": {
+      "type": "gate",
+      "tree": "K",
+      "status": "yes",
+      "step": "Krok 1 · Konkurencja",
+      "checked": "zwiad 13.11.2026",
+      "q": "Czy ktoś w Polsce już ściga alimenciarzy jako biznes?",
+      "note": "**Tak, ale tylko rozdrobnione biura detektywistyczne.**\n\nCo najmniej 11 biur wprost reklamuje ustalanie dochodów, pracy na czarno, majątku i adresu alimenciarzy (m.in. BDR od 1997 r., OPERAND z 6 biurami, Temida, Detektonica). Wszystkie pracują operacyjnie: obserwacja, wywiady, rejestry publiczne (KRS, CEIDG, księgi wieczyste) i OSINT, bez dostępu do PESEL, ZUS i danych skarbowych.\n\nPłaci rodzic, z góry: ustalenie pracodawcy od 2 500 zł, adresu od 2 250 zł, pakiet 4–6 tygodni 8–15 tys. zł, obserwacja ok. 300 zł/h netto. **Nikt nie reklamuje procentu od odzyskanych alimentów**; Temida ma success fee tylko przy zwykłej windykacji.\n\nNie znaleziono kancelarii ani firmy windykacyjnej, która odzyskuje alimenty za prowizję, ani firmy technologicznej w tej niszy (jedyna aplikacja, radiCall, tylko dzwoni do dłużnika).\n\nKonkurencją jest też państwo: komornik na wniosek wierzyciela szuka majątku dłużnika za opłatą, a wierzyciel alimentacyjny nie płaci kosztów komorniczych.",
+      "caveat": "Zwiad przy biurku, bez przeszukania KRS, Map Google i rejestru licencji detektywów; część stron znana tylko ze streszczeń wyszukiwarki. Wniosek „tak” jest pewny, obraz całego rynku jeszcze nie.",
+      "sources": [
+        {
+          "title": "BDR: sprawy alimentacyjne (pakiet 8–15 tys. zł)",
+          "url": "https://detektyw.com.pl/sprawy-alimentacyjne"
+        },
+        {
+          "title": "Temida: cennik detektywa",
+          "url": "https://agencjatemida.pl/cennik-detektyw/"
+        },
+        {
+          "title": "Temida: sprawy alimentacyjne",
+          "url": "https://agencjatemida.pl/agencja-detektywistyczna-prywatny-detektyw/sprawy-alimentacyjne/"
+        },
+        {
+          "title": "OPERAND: alimenciarze",
+          "url": "https://www.operand.pl/alimenciarze/"
+        },
+        {
+          "title": "Detektonica: ustalenia (cennik adresów)",
+          "url": "https://detektonica.com/uslugi/ustalenia-prywatne-i-zawodowe/"
+        },
+        {
+          "title": "W&W Agencja Lublin: majątek dłużnika alimentacyjnego",
+          "url": "https://www.wwagencja.pl/detektyw-lublin-weryfikacja-majatku-dluznika-alimenty/"
+        },
+        {
+          "title": "radiCall: aplikacja dla rodziców (DLabs.AI)",
+          "url": "https://dlabs.ai/case-studies/radicall/"
+        },
+        {
+          "title": "e-prawnik: poszukiwanie majątku dłużnika przez komornika",
+          "url": "https://e-prawnik.pl/artykuly/poszukiwanie-majatku-dłużnika-przez-komornika.html"
+        },
+        {
+          "title": "INFOR: wierzyciel alimentacyjny a koszty komornicze",
+          "url": "https://www.infor.pl/tematy/alimenty/dluznik"
+        }
+      ],
+      "check": [
+        "Biura detektywistyczne z ofertą „alimenty”",
+        "Serwisy i firmy „odzyskaj alimenty”, windykacja",
+        "Kancelarie od egzekucji alimentów",
+        "Startupy i narzędzia OSINT, analiza danych"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "K2"
+        },
+        {
+          "label": "nie",
+          "to": "K_EMPTY",
+          "meaning": "Rynek pusty. Dobry znak tylko wtedy, gdy drzewa wolnych rąk i skali wyjaśnią, dlaczego nikt tego nie robi."
+        }
+      ]
+    },
+    "K2": {
+      "type": "gate",
+      "tree": "K",
+      "status": "unclear",
+      "step": "Krok 1 · Konkurencja",
+      "checked": "wstępnie, przy okazji K1",
+      "q": "Czy jest wśród nich firma technologiczna albo duża, z dobrymi wynikami?",
+      "note": "**Wstępnie nie.**\n\nŻadne z biur nie podaje liczby detektywów ani wyników; największe sygnały skali to wiek (BDR od 1997 r.) i liczba biur (OPERAND, 6). Firmy technologicznej w tej niszy nie znaleziono.\n\nNajbliżsi możliwi wchodzący: Sygnity (oprogramowanie gmin z modułem funduszu alimentacyjnego, czyli ma dane i klientów) oraz Currenda (oprogramowanie komornicze; jej prezes publicznie mówił o profilowaniu dłużników przez AI, produktu brak).\n\nZa granicą (USA) prywatni windykatorzy alimentów to mała nisza: średnio ok. 29% odzyskanych kwot (GAO 2002), ustawowe limity 33–35%, pozwy o podszywanie się pod urzędy, bez technologii. Państwa zlecają całe programy firmom (Maximus, YoungWilliams), ale za kontrakt, nie procent.",
+      "caveat": "Do potwierdzenia: przychody i zatrudnienie największych biur w eKRS, który dostawca obsługuje fundusz alimentacyjny w gminach (przetargi na BIP i e-Zamówieniach).",
+      "sources": [
+        {
+          "title": "PARP: szkolenie z oprogramowania Sygnity dla gmin (fundusz alimentacyjny)",
+          "url": "https://uslugirozwojowe.parp.gov.pl/wyszukiwarka/uslugi/drukuj-pdf?id=3324550"
+        },
+        {
+          "title": "Rzeczpospolita: AI w odzyskiwaniu długów (Currenda)",
+          "url": "https://www.rp.pl/zawody-prawnicze/art41596021-jak-ai-moze-pomoc-w-odzyskiwaniu-dlugow-czy-sztuczna-inteligencja-zastapi-komornikow"
+        },
+        {
+          "title": "GAO-02-349: prywatne firmy windykujące alimenty w USA",
+          "url": "https://www.gao.gov/assets/gao-02-349.pdf"
+        },
+        {
+          "title": "Mississippi Today: kontrakt YoungWilliams",
+          "url": "https://mississippitoday.org/2020/12/29/whos-getting-rich-off-child-support-hint-its-not-the-moms/"
+        }
+      ],
+      "check": [
+        "Profil: praca w terenie, kancelaria czy produkt technologiczny",
+        "Skala: sprawozdania w eKRS, zatrudnienie, liczba spraw",
+        "Opinie klientów i deklarowana skuteczność",
+        "Za granicą (USA, UK, Niemcy): jak wygląda ten biznes, gdzie się udał"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "K3"
+        },
+        {
+          "label": "nie",
+          "to": "K_GAP",
+          "meaning": "Działają tylko mali gracze operacyjni, bez technologii. Rynek jest, nikt go nie zautomatyzował."
+        }
+      ]
+    },
+    "K3": {
+      "type": "gate",
+      "tree": "K",
+      "status": "open",
+      "step": "Krok 1 · Konkurencja",
+      "q": "Czy jest nisza, której silni gracze nie obsługują (np. gminy, dłużnicy za granicą)?",
+      "check": [
+        "Kogo obsługują obecni gracze, a kogo odrzucają",
+        "Rodzaje spraw, których nie biorą"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "K_NICHE"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ to zajęty rynek",
+          "meaning": "Kilka dobrych firm, w tym technologiczna, robi to w skali i we wszystkich niszach. To nie jest kontrariańska teza."
+        }
+      ]
+    },
+    "K_EMPTY": {
+      "type": "ok",
+      "tree": "K",
+      "label": "Pusty rynek",
+      "sub": "dlaczego nikt? odpowiadają drzewa wolnych rąk i skali"
+    },
+    "K_GAP": {
+      "type": "ok",
+      "tree": "K",
+      "label": "Luka technologiczna",
+      "sub": "rynek jest, obsługują go mali operacyjni"
+    },
+    "K_NICHE": {
+      "type": "ok",
+      "tree": "K",
+      "label": "Nisza obok silnych",
+      "sub": "wchodzimy tam, gdzie oni nie chcą"
+    },
+    "S1": {
+      "type": "gate",
+      "tree": "S",
+      "status": "open",
+      "step": "Krok 3 · Skala",
+      "q": "Czy dłużnicy alimentacyjni są winni duże i rosnące kwoty?",
+      "check": [
+        "Sprawozdania ministerstwa rodziny o funduszu alimentacyjnym",
+        "Raporty BIG i KRD o dłużnikach alimentacyjnych",
+        "Raporty NIK, statystyki komornicze"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "S2"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ za mały problem",
+          "meaning": "Zaległości są mniejsze, niż zakłada teza, albo maleją."
+        }
+      ]
+    },
+    "S2": {
+      "type": "gate",
+      "tree": "S",
+      "status": "open",
+      "step": "Krok 3 · Skala",
+      "q": "Czy spora część dłużników naprawdę ma dochody w szarej strefie albo majątek?",
+      "check": [
+        "Badania o dłużnikach alimentacyjnych: praca na czarno, praca za granicą",
+        "Dane komorników o egzekucji bezskutecznej i jej przyczynach",
+        "Rozmowy z komornikami i MOPS"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "S3"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ teza się nie broni",
+          "meaning": "Większość dłużników naprawdę nie ma z czego płacić. Nie ma czego odzyskiwać, niezależnie od metody."
+        }
+      ]
+    },
+    "S3": {
+      "type": "gate",
+      "tree": "S",
+      "status": "open",
+      "step": "Krok 3 · Skala",
+      "q": "Czy procent od odzyskanych kwot pozwoli dobrze płacić ludziom?",
+      "check": [
+        "Średnia zaległość na dłużnika",
+        "Ile godzin pracy zajmuje jedna sprawa",
+        "Jaki procent biorą porównywalni gracze"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "S_OK"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ nie zarobi na pensje",
+          "meaning": "Kwoty na sprawę są za małe w stosunku do pracy nad nią."
+        }
+      ]
+    },
+    "S_OK": {
+      "type": "ok",
+      "tree": "S",
+      "label": "Rynek wart uwagi",
+      "sub": "są pieniądze do odzyskania i marża na ludzi"
+    },
+    "R1": {
+      "type": "gate",
+      "tree": "C",
+      "path": "A",
+      "status": "open",
+      "step": "Krok 2 · Prawo",
+      "q": "Czy wolno brać procent od odzyskanych alimentów?",
+      "check": [
+        "Kodeks rodzinny i opiekuńczy: charakter świadczeń alimentacyjnych",
+        "Kodeks cywilny: granice swobody umów (art. 58, 353¹)",
+        "Jak rozliczają się dziś firmy i kancelarie przy alimentach",
+        "Orzecznictwo o wynagrodzeniu od kwot alimentów"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "R2"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ ścieżka A odpada",
+          "meaning": "Umowa o procent od alimentów jest zakazana albo grozi jej nieważność, np. jako sprzecznej z dobrem dziecka."
+        }
+      ]
+    },
+    "R2": {
+      "type": "gate",
+      "tree": "C",
+      "path": "A",
+      "status": "open",
+      "step": "Krok 4 · Płatnicy",
+      "q": "Czy rodzice zgodzą się oddać ten procent?",
+      "check": [
+        "3–5 rozmów z rodzicami, którym nie płacą alimentów",
+        "Fora i grupy rodziców samotnie wychowujących dzieci",
+        "Cenniki firm, które już to robią (drzewo kontrariańskości)"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "A_OK"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ ścieżka A odpada",
+          "meaning": "Rodzice wolą darmową drogę: komornik plus świadczenie z funduszu alimentacyjnego wypłacane przez gminę."
+        }
+      ]
+    },
+    "A_OK": {
+      "type": "ok",
+      "tree": "C",
+      "label": "Biznes A: B2C",
+      "sub": "usługa dla rodziców, procent od odzyskanych alimentów"
+    },
+    "G1": {
+      "type": "gate",
+      "tree": "C",
+      "path": "B",
+      "status": "open",
+      "step": "Krok 2 · Prawo",
+      "q": "Czy gmina w ogóle może zlecić odzyskiwanie należności z funduszu alimentacyjnego na zewnątrz?",
+      "check": [
+        "Ustawa o pomocy osobom uprawnionym do alimentów",
+        "Ustawa o finansach publicznych",
+        "Wystąpienia i raporty NIK o ściągalności funduszu",
+        "Gminy, które już coś zlecały na zewnątrz"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "G2"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ ścieżka B odpada",
+          "meaning": "Dochodzenie zwrotu wypłaconych świadczeń to ustawowe zadanie organu gminy (decyzje, egzekucja administracyjna), którego nie wolno przekazać firmie."
+        }
+      ]
+    },
+    "G2": {
+      "type": "gate",
+      "tree": "C",
+      "path": "B",
+      "status": "open",
+      "step": "Krok 2 · Prawo",
+      "q": "Czy gmina może przekazać nam dane dłużników?",
+      "check": [
+        "RODO art. 28: powierzenie przetwarzania",
+        "Przepisy o danych w ustawie o pomocy osobom uprawnionym do alimentów",
+        "Stanowiska i decyzje UODO"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "G3"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ ścieżka B odpada",
+          "meaning": "Nie ma podstawy prawnej do udostępnienia danych dłużników firmie, także w formie powierzenia przetwarzania."
+        }
+      ]
+    },
+    "G3": {
+      "type": "gate",
+      "tree": "C",
+      "path": "B",
+      "status": "open",
+      "step": "Krok 2 · Prawo",
+      "q": "Czy gmina może płacić procentem od odzyskanych kwot?",
+      "check": [
+        "Prawo zamówień publicznych: wynagrodzenie i szacowanie wartości",
+        "Ustawa o finansach publicznych",
+        "Gminy płacące prowizją, np. za windykację opłat lokalnych"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "G4"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ ścieżka B odpada",
+          "meaning": "Finanse publiczne lub zamówienia wymagają ceny ustalonej z góry, a nie udziału w odzyskanych kwotach."
+        }
+      ]
+    },
+    "G4": {
+      "type": "gate",
+      "tree": "C",
+      "path": "B",
+      "status": "open",
+      "step": "Krok 2 · Prawo",
+      "q": "Czy jest tryb zamówienia do przejścia dla małej firmy?",
+      "check": [
+        "Progi PZP: zamówienia poniżej progu bez przetargu",
+        "Wymogi w podobnych przetargach na windykację należności gmin"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "G5"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ ścieżka B odpada",
+          "meaning": "Zostają tylko duże przetargi z wymogami doświadczenia i obrotu, których nowa firma nie spełni."
+        }
+      ]
+    },
+    "G5": {
+      "type": "gate",
+      "tree": "C",
+      "path": "B",
+      "status": "open",
+      "step": "Krok 4 · Płatnicy",
+      "q": "Czy MOPS-y tego chcą i mają kto zdecydować?",
+      "check": [
+        "2–3 rozmowy z MOPS/GOPS",
+        "1–2 rozmowy z komornikami",
+        "Ściągalność funduszu w konkretnych gminach"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "B_OK"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ ścieżka B odpada",
+          "meaning": "Ośrodki nie widzą problemu albo nikt nie chce podpisać takiej umowy."
+        }
+      ]
+    },
+    "B_OK": {
+      "type": "ok",
+      "tree": "C",
+      "label": "Biznes B: B2G",
+      "sub": "portfele spraw z gmin, procent od kwot odzyskanych na fundusz"
+    },
+    "C1": {
+      "type": "gate",
+      "tree": "C",
+      "path": "C",
+      "status": "open",
+      "step": "Krok 4 · Płatnicy",
+      "q": "Czy komornik albo inny podmiot zapłaci za wskazanie majątku dłużnika?",
+      "check": [
+        "Czy koszty ustaleń mogą wejść do kosztów egzekucji",
+        "Rozmowy z 1–2 komornikami",
+        "Czy płacą za to już np. fundusze sekurytyzacyjne przy innych długach"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "C_OK"
+        },
+        {
+          "label": "nie",
+          "stop": "✗ ścieżka C odpada",
+          "meaning": "Nikt poza rodzicem i gminą nie ma powodu ani pieniędzy, żeby za to płacić."
+        }
+      ]
+    },
+    "C_OK": {
+      "type": "ok",
+      "tree": "C",
+      "label": "Biznes C: zlecenia",
+      "sub": "ustalenia majątku na zlecenie komorników lub innych wierzycieli"
+    }
+  }
+}

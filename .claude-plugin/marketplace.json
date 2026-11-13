@@ -1,0 +1,14 @@
+{
+  "name": "suw-plugin",
+  "description": "Suwalski's general Claude Code plugin with personal tools and skills.",
+  "owner": {
+    "name": "Piotr Gugnowski"
+  },
+  "plugins": [
+    {
+      "name": "suw",
+      "source": "./plugins/suw",
+      "description": "Personal tools and skills, starting with business-plan-tree: interactive decision trees for the key questions of a business plan, edited conversationally."
+    }
+  ]
+}

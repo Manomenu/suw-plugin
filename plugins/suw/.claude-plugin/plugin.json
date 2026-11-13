@@ -1,0 +1,29 @@
+{
+  "name": "suw",
+  "displayName": "Suwalski Tools",
+  "description": "Personal tools and skills. business-plan-tree draws interactive decision trees answering the key questions of a business plan (does it make sense, what blocks it, who pays) as a self-contained HTML page, published as a claude.ai artifact, and keeps editing it whenever you ask.",
+  "author": {
+    "name": "Piotr Gugnowski"
+  },
+  "homepage": "https://github.com/Manomenu/suw-plugin",
+  "repository": "https://github.com/Manomenu/suw-plugin",
+  "license": "MIT",
+  "keywords": [
+    "business-plan",
+    "decision-tree",
+    "visual",
+    "artifact"
+  ],
+  "userConfig": {
+    "publish_mode": {
+      "type": "string",
+      "title": "Where pages go",
+      "description": "artifact: keep the local HTML and also publish it as a claude.ai artifact, with its link in claude-artifacts.md next to the file. local: keep it on this machine only (for client or confidential work)",
+      "options": [
+        "artifact",
+        "local"
+      ],
+      "default": "artifact"
+    }
+  }
+}

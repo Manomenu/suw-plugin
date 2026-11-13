@@ -1,0 +1,900 @@
+<title>Drzewa planu biznesu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<!-- business-plan-tree engine (suw plugin). Content lives only in the JSON data block below; `tree.py refresh` swaps
+     this engine for the plugin's current one and keeps the data block. -->
+<style>
+/* Layout: full-height tool. Header band with the verdict rule, then a pan/zoom canvas with a forest of independent trees and a detail panel (right on desktop, bottom sheet on phones). */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --frame: #f7f9fb;
+  --ink: #16202a;
+  --muted: #586675;
+  --line: #c4cdd7;
+  --dot: #d3dae2;
+  --accent: #0e6a70;
+  --accent-soft: #dcefef;
+  --ok: #2c7a47;
+  --ok-soft: #e1f1e6;
+  --stop: #ad3535;
+  --stop-soft: #f8e4e4;
+  --open: #9a6110;
+  --open-soft: #f6ecd9;
+  --shadow: 0 1px 2px rgba(22, 32, 42, .08), 0 4px 14px rgba(22, 32, 42, .06);
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e141a; --surface: #17202a; --frame: #121a22; --ink: #e2e8ee; --muted: #93a1ae; --line: #33414f; --dot: #222d38;
+    --accent: #4fb2b7; --accent-soft: #15353a; --ok: #63c084; --ok-soft: #173426; --stop: #e46d6d; --stop-soft: #3a1c1f;
+    --open: #e2a64c; --open-soft: #3a2c14; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e141a; --surface: #17202a; --frame: #121a22; --ink: #e2e8ee; --muted: #93a1ae; --line: #33414f; --dot: #222d38;
+  --accent: #4fb2b7; --accent-soft: #15353a; --ok: #63c084; --ok-soft: #173426; --stop: #e46d6d; --stop-soft: #3a1c1f;
+  --open: #e2a64c; --open-soft: #3a2c14; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.45; }
+* { box-sizing: border-box; }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+
+header {
+  display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px;
+  padding-block: 14px 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--surface);
+}
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 2px 0 0; font-size: 22px; font-weight: 700; text-wrap: balance; }
+.rule { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.rule b { color: var(--ink); font-weight: 600; }
+.summary { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; border: 1px solid var(--line); background: var(--bg); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+main { min-height: 0; display: grid; grid-template-columns: 1fr 8px var(--panel-w, 360px); }
+.resizer { position: relative; background: var(--surface); border-left: 1px solid var(--line); cursor: col-resize; touch-action: none; }
+.resizer::after { content: ""; position: absolute; left: 50%; top: 50%; width: 3px; height: 40px; transform: translate(-50%, -50%); border-radius: 3px; background: var(--line); }
+.resizer:hover::after, .resizer.active::after, .resizer:focus-visible::after { background: var(--accent); }
+.resizer:focus-visible { outline: none; }
+.panel-col { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto 1fr; background: var(--surface); }
+.panel-tools { display: flex; justify-content: flex-end; gap: 6px; padding: 8px 12px 0; }
+.panel-tools button { border: 1px solid var(--line); background: var(--bg); color: var(--muted); border-radius: 6px; font: 500 12px var(--sans); padding: 3px 9px; cursor: pointer; }
+.panel-tools button:hover { color: var(--ink); border-color: var(--muted); }
+.panel-tools button:focus-visible { outline: 2px solid var(--accent); }
+.stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+.viewport {
+  position: absolute; inset: 0; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--dot) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+.viewport.dragging { cursor: grabbing; }
+.world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+.world svg { position: absolute; left: 0; top: 0; overflow: visible; z-index: 1; }
+.world > svg { width: 0; height: 0; }
+.edge { fill: none; stroke: var(--line); stroke-width: 1.6; }
+.edge.no { stroke: var(--stop); stroke-dasharray: 5 4; opacity: .75; }
+.edge.yes { stroke: var(--muted); }
+.edge.branch { stroke: var(--accent); stroke-width: 2; }
+.arrow-yes { fill: var(--muted); } .arrow-no { fill: var(--stop); } .arrow-branch { fill: var(--accent); }
+
+/* The frame label is the frame's direct child span only; a descendant selector would also restyle spans inside nodes. */
+.frame { position: absolute; z-index: 0; border: 1px dashed var(--line); border-radius: 14px; background: var(--frame); }
+.frame > span { position: absolute; left: 14px; top: 10px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+
+.elabel { position: absolute; z-index: 3; transform: translate(-50%, -50%); font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 4px; background: var(--frame); color: var(--muted); white-space: nowrap; pointer-events: none; }
+.elabel.branch { color: var(--accent); font-size: 13px; padding: 2px 9px; border: 1px solid var(--accent); background: var(--surface); }
+.elabel.no { color: var(--stop); }
+
+.node { position: absolute; z-index: 2; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 10px 12px; cursor: pointer; }
+.node:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.node.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+.node.root { text-align: center; border: 2px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; }
+.node.root b { font-size: 17px; display: block; text-wrap: balance; }
+.node.root small { display: block; color: var(--muted); margin-top: 2px; }
+.node.root .need { display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--surface); color: var(--accent); }
+.node.gate { border-left: 4px solid var(--open); }
+.node.gate[data-status="yes"] { border-left-color: var(--ok); }
+.node.gate[data-status="no"] { border-left-color: var(--stop); }
+.gate-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.gid { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); }
+.status { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--open-soft); color: var(--open); white-space: nowrap; }
+.status.yes { background: var(--ok-soft); color: var(--ok); } .status.no { background: var(--stop-soft); color: var(--stop); }
+.status.unclear { background: transparent; border: 1px dashed var(--open); }
+.gate-q { font-weight: 600; font-size: 14px; text-wrap: pretty; }
+.gate-step { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.toggle { margin-left: auto; width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font: 600 14px/1 var(--mono); cursor: pointer; display: grid; place-items: center; padding: 0; flex: none; }
+.toggle:hover { color: var(--ink); border-color: var(--muted); }
+.toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hidden-badge { margin-top: 6px; font-size: 12px; color: var(--muted); }
+.node.stop { background: var(--stop-soft); border-color: transparent; color: var(--stop); font-weight: 600; font-size: 13px; padding: 8px 10px; box-shadow: none; cursor: default; }
+.node.ok { background: var(--ok-soft); border: 1.5px solid var(--ok); }
+.node.ok b { color: var(--ok); font-size: 15px; }
+.node.ok p { margin: 3px 0 0; color: var(--muted); font-size: 12.5px; }
+
+.controls { position: absolute; right: 12px; bottom: 12px; z-index: 5; display: flex; gap: 4px; padding: 4px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.controls button { min-width: 34px; height: 34px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: var(--ink); font: 600 15px var(--sans); cursor: pointer; }
+.controls button:hover { background: var(--bg); }
+.controls button:focus-visible { outline: 2px solid var(--accent); }
+.controls .zoomval { min-width: 52px; display: grid; place-items: center; font: 500 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.hint { position: absolute; left: 12px; bottom: 12px; z-index: 5; font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; max-width: calc(100% - 330px); }
+
+aside { min-width: 0; min-height: 0; overflow: auto; background: var(--surface); padding: 18px 20px 24px; }
+aside h2 { margin: 0 0 4px; font-size: 17px; text-wrap: balance; }
+aside h3 { margin: 18px 0 6px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+aside p { margin: 0 0 8px; max-width: 62ch; }
+aside ul { margin: 0; padding-left: 18px; }
+aside li { margin: 3px 0; }
+aside a, .linkbtn { color: var(--accent); }
+.linkbtn { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 2px; }
+.note { padding: 9px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--ink); font-size: 13px; margin-top: 10px; }
+.note.stop { background: var(--stop-soft); }
+.note.ok { background: var(--ok-soft); }
+.muted-note { color: var(--muted); font-size: 12.5px; margin-top: 12px; }
+.trees { display: grid; gap: 8px; margin-top: 10px; }
+.tree-item { display: grid; gap: 2px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--frame); text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
+.tree-item:hover { border-color: var(--accent); }
+.tree-item:focus-visible { outline: 2px solid var(--accent); }
+.tree-item b { font-size: 14px; }
+.tree-item span { font-size: 12.5px; color: var(--muted); }
+.outs { display: grid; gap: 8px; }
+.out { padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); }
+.out.stop { background: var(--stop-soft); border-color: transparent; }
+.out .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.out.stop .lbl { color: var(--stop); }
+.out.chosen { border: 2px solid var(--accent); }
+.note p { margin: 6px 0 0; }
+.note p:first-child { margin-top: 0; }
+.sources { font-size: 13px; }
+.sources li { overflow-wrap: anywhere; }
+/* Legend swatches have their own classes; reusing .frame here would make them absolutely positioned. */
+.legend { display: grid; gap: 7px; }
+.legend div { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+.sw { width: 26px; height: 16px; border-radius: 4px; flex: none; border: 1px solid var(--line); }
+.sw.gate { border-left: 4px solid var(--open); background: var(--surface); }
+.sw.ok { background: var(--ok-soft); border-color: var(--ok); }
+.sw.stop { background: var(--stop-soft); border-color: transparent; }
+.sw.root { background: var(--accent-soft); border: 2px solid var(--accent); }
+.sw.tframe { background: var(--frame); border: 1px dashed var(--line); }
+kbd { font: 500 11px var(--mono); padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.data-error { margin: 24px; padding: 14px 16px; border-radius: 8px; background: var(--stop-soft); color: var(--stop); font: 500 13px/1.5 var(--mono); white-space: pre-wrap; }
+
+@media (max-width: 760px) {
+  main { grid-template-columns: 1fr; grid-template-rows: 1fr 10px auto; }
+  .resizer { border-left: 0; border-top: 1px solid var(--line); cursor: row-resize; }
+  .resizer::after { width: 40px; height: 3px; }
+  /* no max-height here: panelMax() caps the height, and a percentage cap left an empty band under the panel */
+  aside { height: var(--panel-h, 42vh); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .hint { display: none; }
+  h1 { font-size: 19px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .world.animate { transition: transform .3s ease; }
+}
+</style>
+
+<div class="app">
+  <header>
+    <div>
+      <div class="eyebrow" id="eyebrow"></div>
+      <h1 id="heading"></h1>
+      <div class="rule" id="rule"></div>
+    </div>
+    <div class="summary" id="summary"></div>
+  </header>
+  <main>
+    <div class="stage">
+      <div class="viewport" id="viewport">
+        <div class="world" id="world"><svg id="edges" width="1" height="1" aria-hidden="true">
+          <defs>
+            <marker id="m-yes" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow-yes" d="M0,0 L10,5 L0,10 z"/></marker>
+            <marker id="m-no" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow-no" d="M0,0 L10,5 L0,10 z"/></marker>
+            <marker id="m-branch" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrow-branch" d="M0,0 L10,5 L0,10 z"/></marker>
+          </defs>
+        </svg></div>
+      </div>
+      <div class="hint" id="hint"></div>
+      <div class="controls" role="toolbar" id="controls">
+        <button type="button" id="zoom-out">−</button>
+        <span class="zoomval" id="zoomval">100%</span>
+        <button type="button" id="zoom-in">+</button>
+        <button type="button" id="fit"></button>
+        <button type="button" id="expand"></button>
+      </div>
+    </div>
+    <div class="resizer" id="resizer" role="separator" aria-orientation="vertical" tabindex="0"></div>
+    <div class="panel-col">
+      <div class="panel-tools"><button type="button" id="panel-wide"></button></div>
+      <aside id="panel" aria-live="polite"></aside>
+    </div>
+  </main>
+</div>
+
+<!-- TREE DATA START: all content of the page is this JSON; edit only here. Inside strings write <\/ instead of </. -->
+<script type="application/json" id="tree-data">
+{
+  "lang": "pl",
+  "title": "Drzewa planu biznesu",
+  "eyebrow": "Przykład · drzewa decyzyjne",
+  "heading": "Czy ten biznes ma sens?",
+  "rule": "Idziemy dalej, gdy przejdzie **rynek**, a do tego **co najmniej jedna ścieżka klienta**.",
+  "asOf": "",
+  "overview": {
+    "title": "Dwa niezależne drzewa",
+    "text": "Pierwsze nie zależy od tego, kto płaci, i musi przejść. Drugie wybiera klienta i wystarczy w nim jedna ścieżka.",
+    "note": "W każdym drzewie pytania stoją od najtańszych do sprawdzenia (dane, przy biurku) do najdroższych (rozmowy z ludźmi)."
+  },
+  "rows": [
+    [
+      "M"
+    ],
+    [
+      "C"
+    ]
+  ],
+  "trees": [
+    {
+      "id": "M",
+      "mode": "must",
+      "frame": "musi przejść",
+      "need": "musi przejść",
+      "title": "Czy rynek jest wart uwagi?",
+      "sub": "skala problemu i pieniądze w nim",
+      "desc": "Jeśli problem jest mały, żaden klient go nie uratuje.",
+      "branches": [
+        {
+          "to": "M1"
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "mode": "any",
+      "frame": "wystarczy jedna ścieżka",
+      "need": "wystarczy jedna ścieżka",
+      "title": "Kto jest klientem?",
+      "sub": "od tego zależy, jaki to będzie biznes",
+      "desc": "Każda ścieżka to inny biznes. Wystarczy, że przejdzie jedna.",
+      "branches": [
+        {
+          "edge": "firmy",
+          "to": "B1"
+        },
+        {
+          "edge": "osoby prywatne",
+          "to": "P1"
+        }
+      ]
+    }
+  ],
+  "paths": {
+    "B": "firmy",
+    "P": "osoby prywatne"
+  },
+  "nodes": {
+    "M1": {
+      "type": "gate",
+      "tree": "M",
+      "status": "open",
+      "step": "Krok 1 · Skala",
+      "q": "Czy problem dotyczy wystarczająco wielu ludzi lub firm?",
+      "check": [
+        "Dane GUS i raporty branżowe",
+        "Liczba podmiotów w rejestrach"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "M_OK"
+        },
+        {
+          "label": "nie",
+          "stop": "za mały rynek",
+          "meaning": "Problem jest niszowy i nie utrzyma firmy."
+        }
+      ]
+    },
+    "M_OK": {
+      "type": "ok",
+      "tree": "M",
+      "label": "Rynek wart uwagi",
+      "sub": "jest dość klientów z tym problemem"
+    },
+    "B1": {
+      "type": "gate",
+      "tree": "C",
+      "path": "B",
+      "status": "open",
+      "step": "Krok 2 · Płatnicy",
+      "q": "Czy firmy zapłacą za rozwiązanie?",
+      "check": [
+        "3–5 rozmów z osobami, które kupują takie usługi",
+        "Cenniki obecnych dostawców"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "B_OK"
+        },
+        {
+          "label": "nie",
+          "stop": "ścieżka firm odpada",
+          "meaning": "Firmy rozwiązują to same albo nie mają budżetu."
+        }
+      ]
+    },
+    "B_OK": {
+      "type": "ok",
+      "tree": "C",
+      "label": "Biznes B2B",
+      "sub": "usługa dla firm"
+    },
+    "P1": {
+      "type": "gate",
+      "tree": "C",
+      "path": "P",
+      "status": "open",
+      "step": "Krok 2 · Płatnicy",
+      "q": "Czy osoby prywatne zapłacą za rozwiązanie?",
+      "check": [
+        "Fora i grupy osób z tym problemem",
+        "3–5 rozmów z potencjalnymi klientami"
+      ],
+      "outs": [
+        {
+          "label": "tak",
+          "to": "P_OK"
+        },
+        {
+          "label": "nie",
+          "stop": "ścieżka osób prywatnych odpada",
+          "meaning": "Ludzie wolą darmowe obejścia problemu."
+        }
+      ]
+    },
+    "P_OK": {
+      "type": "ok",
+      "tree": "C",
+      "label": "Biznes B2C",
+      "sub": "usługa dla osób prywatnych"
+    }
+  }
+}
+</script>
+<!-- TREE DATA END -->
+
+<script>
+// Engine: renders the forest from the JSON data block. Every text comes from the data or from the UI dictionary below.
+const UI = {
+  pl: {
+    status: { open: "do sprawdzenia", yes: "tak", no: "nie", unclear: "niejasne" },
+    trees: n => `${n} ${plural(n, "niezależne drzewo", "niezależne drzewa", "niezależnych drzew")}`,
+    questions: n => `${n} ${plural(n, "pytanie", "pytania", "pytań")}`,
+    toCheck: "do sprawdzenia", yes: "tak", no: "nie", asOf: d => `stan na ${d}`,
+    overviewTitle: n => `${n} ${plural(n, "niezależne drzewo", "niezależne drzewa", "niezależnych drzew")}`,
+    allOpen: "Nic tu nie jest jeszcze sprawdzone w źródłach. Opisy odpowiedzi to hipotezy, które rozpoznanie ma potwierdzić albo obalić.",
+    legend: "Legenda", controls: "Sterowanie",
+    lgFrame: "jedno drzewo; podpis mówi, czy musi przejść", lgRoot: "pytanie, od którego drzewo się zaczyna",
+    lgGate: "pytanie zaporowe; kolor paska to stan", lgStop: "ta odpowiedź zamyka ścieżkę", lgOk: "drzewo albo ścieżka przeszła",
+    ctl: ["przeciągnij tło, żeby przesunąć; kółko myszy lub szczypanie, żeby przybliżyć",
+          "<kbd>−</kbd>/<kbd>+</kbd> przy węźle zwija i rozwija gałąź pod nim",
+          "klawisze: <kbd>+</kbd> <kbd>−</kbd> przybliżenie, <kbd>0</kbd> dopasuj, strzałki przesuwają"],
+    tree: "Drzewo", passesAt: "Drzewo przechodzi, gdy dojdziemy do", firstQ: "Pierwsze pytanie", firstQs: "Pierwsze pytania",
+    answers: "Odpowiedzi", checks: "Co sprawdzamy", next: "Dalej:", back: "← wszystkie drzewa",
+    finding: "Ustalenia", sources: "Źródła", chosen: "ta odpowiedź",
+    okAny: "Tu dochodzimy, gdy wszystkie pytania na tej ścieżce wyszły „tak”. Wystarczy jedna taka ścieżka w tym drzewie.",
+    okMust: "Tym wynikiem drzewo przechodzi. Biznes ma sens dopiero wtedy, gdy przejdą też pozostałe drzewa.",
+    hidden: n => `ukryte: ${n ? `${n} ${plural(n, "pytanie", "pytania", "pytań")} i ` : ""}wyniki`,
+    expandUnder: k => `Rozwiń gałąź pod ${k}`, collapseUnder: k => `Zwiń gałąź pod ${k}`,
+    hint: "Przeciągnij, żeby przesunąć · kółko lub szczypanie, żeby przybliżyć · kliknij węzeł po szczegóły",
+    fit: "Dopasuj", expand: "Rozwiń", zoomIn: "Przybliż", zoomOut: "Oddal", view: "Widok",
+    canvas: "Drzewa decyzyjne, przeciągnij aby przesunąć, kółkiem przybliż",
+    badData: "Blok danych drzewa jest uszkodzony. Uruchom `tree.py check` na tym pliku.",
+    widen: "↔ Poszerz panel", narrow: "↔ Zwęż panel",
+    resizer: "Przeciągnij, żeby zmienić rozmiar panelu", resizerTip: "Przeciągnij, żeby poszerzyć panel · dwuklik: szeroko / wąsko",
+  },
+  en: {
+    status: { open: "to check", yes: "yes", no: "no", unclear: "unclear" },
+    trees: n => `${n} independent ${n === 1 ? "tree" : "trees"}`,
+    questions: n => `${n} ${n === 1 ? "question" : "questions"}`,
+    toCheck: "to check", yes: "yes", no: "no", asOf: d => `as of ${d}`,
+    overviewTitle: n => `${n} independent ${n === 1 ? "tree" : "trees"}`,
+    allOpen: "Nothing here has been checked against sources yet. The answer descriptions are hypotheses that research has to confirm or refute.",
+    legend: "Legend", controls: "Controls",
+    lgFrame: "one tree; its label says whether it must pass", lgRoot: "the question a tree starts from",
+    lgGate: "gate question; the bar colour is its status", lgStop: "this answer closes the path", lgOk: "the tree or path passed",
+    ctl: ["drag the background to pan; mouse wheel or pinch to zoom",
+          "<kbd>−</kbd>/<kbd>+</kbd> on a node collapses and expands the branch below it",
+          "keys: <kbd>+</kbd> <kbd>−</kbd> zoom, <kbd>0</kbd> fit, arrows pan"],
+    tree: "Tree", passesAt: "The tree passes when we reach", firstQ: "First question", firstQs: "First questions",
+    answers: "Answers", checks: "What we check", next: "Next:", back: "← all trees",
+    finding: "Findings", sources: "Sources", chosen: "this answer",
+    okAny: "We get here when every question on this path came out “yes”. One such path in this tree is enough.",
+    okMust: "This outcome passes the tree. The business makes sense only when the other trees pass too.",
+    hidden: n => `hidden: ${n ? `${n} ${n === 1 ? "question" : "questions"} and ` : ""}outcomes`,
+    expandUnder: k => `Expand the branch under ${k}`, collapseUnder: k => `Collapse the branch under ${k}`,
+    hint: "Drag to pan · wheel or pinch to zoom · click a node for details",
+    fit: "Fit", expand: "Expand", zoomIn: "Zoom in", zoomOut: "Zoom out", view: "View",
+    canvas: "Decision trees, drag to pan, wheel to zoom",
+    badData: "The tree data block is broken. Run `tree.py check` on this file.",
+    widen: "↔ Widen panel", narrow: "↔ Narrow panel",
+    resizer: "Drag to resize the panel", resizerTip: "Drag to widen the panel · double-click: wide / narrow",
+  },
+};
+function plural(n, one, few, many) {
+  if (n === 1) return one;
+  const d = n % 10, h = n % 100;
+  return d >= 2 && d <= 4 && (h < 12 || h > 14) ? few : many;
+}
+// Data text is escaped; **bold** is the only markup it may use.
+function fmt(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c])
+    .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+}
+// A longer text (a research note) may have paragraphs, separated by a blank line.
+const fmtBlock = s => String(s ?? "").split(/\n\s*\n/).map(p => `<p>${fmt(p.trim())}</p>`).join("");
+const attr = s => fmt(s).replace(/<\/?b>/g, "");
+const okMark = s => (String(s).startsWith("✓") ? String(s) : "✓ " + s);
+const stopMark = s => (String(s).startsWith("✗") ? String(s) : "✗ " + s);
+
+let DATA;
+try { DATA = JSON.parse(document.getElementById("tree-data").textContent); } catch (e) { DATA = null; }
+const T = UI[(DATA && DATA.lang) || "pl"] || UI.pl;
+const TREES = (DATA && DATA.trees) || [];
+const NODES = (DATA && DATA.nodes) || {};
+const ROWS = (DATA && DATA.rows) || [TREES.map(t => t.id)];
+const PATH_NAME = (DATA && DATA.paths) || {};
+
+const GW = 280, LW = 170, RW = 300, GAPX = 64, GAPY = 70, COLGAP = 90, TOPGAP = 110, TREEGAP = 150, ROWGAP = 130, FPAD = 34;
+const viewport = document.getElementById("viewport");
+const world = document.getElementById("world");
+const panel = document.getElementById("panel");
+const collapsed = new Set();
+// file:// pages share one origin, so the key carries the page's title.
+const STORE_KEY = "bpt-collapsed:" + ((DATA && DATA.title) || "");
+let selected = null;
+let view = { s: 1, tx: 0, ty: 0 };
+let bounds = { w: 0, h: 0 };
+let elems = new Map();
+
+function store(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+function load(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
+
+const treeOf = id => TREES.find(t => t.id === id);
+const modeOf = t => t.mode || (t.branches.length > 1 ? "any" : "must");
+function descendants(id) {
+  const n = NODES[id]; if (!n || n.type !== "gate") return [];
+  return n.outs.filter(o => o.to).flatMap(o => [o.to, ...descendants(o.to)]);
+}
+function nodeName(id) { const n = NODES[id]; return n.type === "gate" ? `${id}: ${fmt(n.q)}` : fmt(okMark(n.label)); }
+
+function header() {
+  document.documentElement.lang = DATA.lang || "pl";
+  document.getElementById("eyebrow").innerHTML = fmt(DATA.eyebrow);
+  document.getElementById("heading").innerHTML = fmt(DATA.heading || DATA.title);
+  document.getElementById("rule").innerHTML = fmt(DATA.rule);
+  document.getElementById("hint").textContent = T.hint;
+  viewport.setAttribute("aria-label", T.canvas);
+  document.getElementById("controls").setAttribute("aria-label", T.view);
+  document.getElementById("zoom-out").setAttribute("aria-label", T.zoomOut);
+  document.getElementById("zoom-in").setAttribute("aria-label", T.zoomIn);
+  document.getElementById("fit").textContent = T.fit;
+  document.getElementById("expand").textContent = T.expand;
+}
+
+function summary() {
+  const gates = Object.values(NODES).filter(n => n.type === "gate");
+  const count = s => gates.filter(g => g.status === s).length;
+  document.getElementById("summary").innerHTML =
+    `<span class="chip">${T.trees(TREES.length)}</span>` +
+    `<span class="chip">${T.questions(gates.length)}</span>` +
+    `<span class="chip"><i style="background:var(--open)"></i>${count("open") + count("unclear")} ${T.toCheck}</span>` +
+    `<span class="chip"><i style="background:var(--ok)"></i>${count("yes")} ${T.yes}</span>` +
+    `<span class="chip"><i style="background:var(--stop)"></i>${count("no")} ${T.no}</span>` +
+    (DATA.asOf ? `<span class="chip">${fmt(T.asOf(DATA.asOf))}</span>` : "");
+}
+
+function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+
+function makeNode(key, kind, extra) {
+  let e, w = GW;
+  if (kind === "root") {
+    const t = treeOf(key.slice(5));
+    e = el("div", "node root", `<b>${fmt(t.title)}</b>${t.sub ? `<small>${fmt(t.sub)}</small>` : ""}${t.need ? `<span class="need">${fmt(t.need)}</span>` : ""}`);
+    w = RW;
+  } else if (kind === "stop") {
+    e = el("div", "node stop", fmt(stopMark(extra)));
+    w = LW;
+  } else {
+    const n = NODES[key];
+    if (n.type === "gate") {
+      const isCol = collapsed.has(key);
+      const hidden = descendants(key).filter(x => NODES[x] && NODES[x].type === "gate").length;
+      e = el("div", "node gate",
+        `<div class="gate-top"><span class="gid">${fmt(key)}</span><span class="status ${attr(n.status)}">${T.status[n.status] || fmt(n.status)}</span>` +
+        `<button type="button" class="toggle" aria-label="${attr(isCol ? T.expandUnder(key) : T.collapseUnder(key))}">${isCol ? "+" : "−"}</button></div>` +
+        `<div class="gate-q">${fmt(n.q)}</div>${n.step ? `<div class="gate-step">${fmt(n.step)}</div>` : ""}` +
+        (isCol ? `<div class="hidden-badge">${T.hidden(hidden)}</div>` : ""));
+      e.dataset.status = n.status;
+      e.querySelector(".toggle").addEventListener("click", ev => {
+        ev.stopPropagation();
+        if (dragGuard()) return;
+        isCol ? collapsed.delete(key) : collapsed.add(key);
+        store(STORE_KEY, [...collapsed]);
+        render();
+      });
+    } else {
+      e = el("div", "node ok", `<b>${fmt(okMark(n.label))}</b>${n.sub ? `<p>${fmt(n.sub)}</p>` : ""}`);
+    }
+  }
+  if (kind !== "stop") {
+    e.dataset.node = key;
+    e.tabIndex = 0;
+    e.setAttribute("role", "button");
+    e.addEventListener("click", () => { if (!dragGuard()) select(key); });
+    e.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.stopPropagation(); select(key); } });
+  }
+  e.style.width = w + "px";
+  cur.inner.appendChild(e);
+  const info = { el: e, w, h: e.offsetHeight, x: 0, y: 0 };
+  elems.set(key, info);
+  return info;
+}
+
+function kids(key) {
+  const n = NODES[key];
+  if (!n || n.type !== "gate" || collapsed.has(key)) return [];
+  return n.outs.map((o, i) => o.to ? { key: o.to, label: o.label, stop: false } : { key: `${key}#${i}`, label: o.label, stop: true, text: o.stop });
+}
+
+let treePlaced, cur;
+function place(info, x, y) { info.x = x; info.y = y; info.el.style.left = x + "px"; info.el.style.top = y + "px"; treePlaced.push(info); }
+
+// The first out goes down, the others go right. Returns the subtree's width.
+function lay(key, x, y, info) {
+  const me = info || elems.get(key) || makeNode(key, "node");
+  place(me, x, y);
+  const ch = kids(key);
+  if (!ch.length) return me.w;
+  const infos = ch.map(c => c.stop ? makeNode(c.key, "stop", c.text) : (elems.get(c.key) || makeNode(c.key, "node")));
+  const c0 = ch[0], i0 = infos[0];
+  const cy = y + me.h + GAPY;
+  let w0;
+  if (c0.stop) { place(i0, x + (me.w - i0.w) / 2, cy); w0 = me.w; }
+  else w0 = lay(c0.key, x, cy, i0);
+  const ax = x + me.w / 2, bx = i0.x + i0.w / 2;
+  path(`M${ax},${y + me.h} C${ax},${cy - GAPY / 2} ${bx},${cy - GAPY / 2} ${bx},${cy - 2}`, c0.stop ? "no" : "yes");
+  label((ax + bx) / 2, y + me.h + GAPY / 2, c0.label, c0.stop ? "no" : "");
+  let cursor = x + Math.max(me.w, w0) + GAPX;
+  ch.slice(1).forEach((c, j) => {
+    const ci = infos[j + 1];
+    let wi;
+    if (c.stop) { place(ci, cursor, y + me.h / 2 - ci.h / 2); wi = ci.w; }
+    else wi = lay(c.key, cursor, y, ci);
+    const sx = x + me.w, sy = y + me.h / 2, ex = cursor, ey = ci.y + ci.h / 2;
+    path(ey === sy ? `M${sx},${sy} L${ex - 2},${ey}` : `M${sx},${sy} C${sx + GAPX / 2},${sy} ${ex - GAPX / 2},${ey} ${ex - 2},${ey}`, c.stop ? "no" : "yes");
+    label(x + me.w + GAPX / 2, (sy + ey) / 2, c.label, c.stop ? "no" : "");
+    cursor += wi + GAPX;
+  });
+  return cursor - GAPX - x;
+}
+
+// Each tree is drawn in its own frame with its own coordinate system; the frames are then set in rows.
+function layTree(t) {
+  const frame = el("div", "frame", `<span>${fmt(t.frame || "")}</span>`);
+  const inner = el("div", "inner"); inner.style.position = "absolute";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "1"); svg.setAttribute("height", "1"); svg.setAttribute("aria-hidden", "true");
+  inner.appendChild(svg); frame.appendChild(inner); world.appendChild(frame);
+  cur = { inner, svg };
+  treePlaced = [];
+  const root = makeNode("root:" + t.id, "root");
+  const by = root.h + TOPGAP;
+  let bx = 0;
+  const heads = [];
+  t.branches.forEach(b => {
+    const info = makeNode(b.to, "node");
+    const w = lay(b.to, bx, by, info);
+    heads.push({ b, info });
+    bx += w + COLGAP;
+  });
+  const c1 = heads[0].info.x + heads[0].info.w / 2, c2 = heads[heads.length - 1].info.x + heads[heads.length - 1].info.w / 2;
+  place(root, (c1 + c2) / 2 - RW / 2, 0);
+  heads.forEach(({ b, info }) => {
+    const sx = root.x + RW / 2, sy = root.y + root.h, ex = info.x + info.w / 2, ey = info.y, my = (sy + ey) / 2;
+    path(`M${sx},${sy} C${sx},${my} ${ex},${my} ${ex},${ey - 2}`, "branch");
+    if (b.edge) label((sx + ex) / 2, my, b.edge, "branch");
+  });
+  const box = treePlaced.reduce((m, i) => ({ x1: Math.min(m.x1, i.x), y1: Math.min(m.y1, i.y), x2: Math.max(m.x2, i.x + i.w), y2: Math.max(m.y2, i.y + i.h) }), { x1: Infinity, y1: Infinity, x2: -Infinity, y2: -Infinity });
+  const ox = FPAD - box.x1, oy = FPAD + 18 - box.y1;
+  inner.style.left = ox + "px"; inner.style.top = oy + "px";
+  const w = box.x2 - box.x1 + FPAD * 2, h = box.y2 - box.y1 + FPAD * 2 + 18;
+  frame.style.width = w + "px"; frame.style.height = h + "px";
+  return { frame, w, h, ox, oy, members: [...treePlaced] };
+}
+
+function render() {
+  world.querySelectorAll(".frame").forEach(x => x.remove());
+  elems = new Map();
+  const rows = ROWS.map(ids => {
+    const trees = ids.map(id => layTree(treeOf(id)));
+    return { trees, w: trees.reduce((s, t) => s + t.w, 0) + TREEGAP * (trees.length - 1), h: Math.max(...trees.map(t => t.h)) };
+  });
+  const maxW = Math.max(...rows.map(r => r.w));
+  let y = 0;
+  rows.forEach(r => {
+    let x = (maxW - r.w) / 2;
+    r.trees.forEach(t => {
+      t.frame.style.left = x + "px"; t.frame.style.top = y + "px";
+      t.members.forEach(i => { i.gx = x + t.ox + i.x; i.gy = y + t.oy + i.y; });
+      x += t.w + TREEGAP;
+    });
+    y += r.h + ROWGAP;
+  });
+  bounds = { w: maxW, h: y - ROWGAP };
+  if (selected) { const s = elems.get(selected); if (s) s.el.classList.add("sel"); else selected = null; }
+}
+
+function path(d, kind) {
+  const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  p.setAttribute("d", d); p.setAttribute("class", "edge " + kind); p.setAttribute("marker-end", `url(#m-${kind})`);
+  cur.svg.appendChild(p);
+}
+function label(x, y, text, kind) { const l = el("div", "elabel " + kind, fmt(text)); l.style.left = x + "px"; l.style.top = y + "px"; cur.inner.appendChild(l); }
+
+function select(key, focusIt) {
+  selected = key;
+  world.querySelectorAll(".node.sel").forEach(x => x.classList.remove("sel"));
+  const info = elems.get(key);
+  if (info) { info.el.classList.add("sel"); if (focusIt) focusOn(info); }
+  else if (focusIt && NODES[key]) {
+    // the node sits under a collapsed branch: expand its ancestors
+    for (const id of Object.keys(NODES)) if (descendants(id).includes(key)) collapsed.delete(id);
+    store(STORE_KEY, [...collapsed]); render(); return select(key, true);
+  }
+  showPanel();
+}
+function selectTree(id) { select("root:" + id, true); }
+
+function showPanel() {
+  const key = selected;
+  const gates = Object.values(NODES).filter(n => n.type === "gate");
+  if (!key) {
+    const ov = DATA.overview || {};
+    panel.innerHTML = `
+      <h2>${ov.title ? fmt(ov.title) : T.overviewTitle(TREES.length)}</h2>
+      ${ov.text ? `<p>${fmt(ov.text)}</p>` : ""}
+      <div class="trees">${TREES.map(t => `<button type="button" class="tree-item" data-tree="${attr(t.id)}"><b>${fmt(t.title)}</b><span>${[t.sub, t.need].filter(Boolean).map(fmt).join(" · ")}</span></button>`).join("")}</div>
+      ${ov.note ? `<div class="note">${fmt(ov.note)}</div>` : ""}
+      ${gates.length && !gates.some(g => g.note) ? `<p class="muted-note">${T.allOpen}</p>` : ""}
+      <h3>${T.legend}</h3>
+      <div class="legend">
+        <div><span class="sw tframe"></span>${T.lgFrame}</div>
+        <div><span class="sw root"></span>${T.lgRoot}</div>
+        <div><span class="sw gate"></span>${T.lgGate}</div>
+        <div><span class="sw stop"></span>${T.lgStop}</div>
+        <div><span class="sw ok"></span>${T.lgOk}</div>
+      </div>
+      <h3>${T.controls}</h3>
+      <ul>${T.ctl.map(c => `<li>${c}</li>`).join("")}</ul>`;
+  } else if (key.startsWith("root:")) {
+    const t = treeOf(key.slice(5));
+    const oks = Object.entries(NODES).filter(([, n]) => n.tree === t.id && n.type === "ok");
+    panel.innerHTML = `
+      <div class="eyebrow">${T.tree}${t.need ? " · " + fmt(t.need) : ""}</div>
+      <h2>${fmt(t.title)}</h2>
+      ${t.desc ? `<p>${fmt(t.desc)}</p>` : ""}
+      <h3>${T.passesAt}</h3>
+      <ul>${oks.map(([id, n]) => `<li><button type="button" class="linkbtn" data-go="${attr(id)}">${fmt(okMark(n.label))}</button>${n.sub ? ": " + fmt(n.sub) : ""}</li>`).join("")}</ul>
+      <h3>${t.branches.length > 1 ? T.firstQs : T.firstQ}</h3>
+      <ul>${t.branches.map(b => `<li>${b.edge ? `<b>${fmt(b.edge)}</b>: ` : ""}<button type="button" class="linkbtn" data-go="${attr(b.to)}">${nodeName(b.to)}</button></li>`).join("")}</ul>`;
+  } else {
+    const n = NODES[key], t = treeOf(n.tree);
+    const where = `${fmt(t.title)}${n.path ? " · " + fmt(PATH_NAME[n.path] || n.path) : ""}`;
+    if (n.type === "ok") {
+      panel.innerHTML = `<div class="eyebrow">${where}</div>
+        <h2>${fmt(okMark(n.label))}</h2>${n.sub ? `<p>${fmt(n.sub)}</p>` : ""}
+        <div class="note ok">${t.okNote ? fmt(t.okNote) : modeOf(t) === "any" ? T.okAny : T.okMust}</div>`;
+    } else {
+      const sources = n.sources || [];
+      // The answer research picked: `answer` names its label; otherwise yes is the first out and no the second.
+      const chosen = n.answer != null ? n.outs.findIndex(o => o.label === n.answer) : n.status === "yes" ? 0 : n.status === "no" ? 1 : -1;
+      panel.innerHTML = `
+        <div class="eyebrow">${where} · ${fmt(key)}</div>
+        <h2>${fmt(n.q)}</h2>
+        <p><span class="status ${attr(n.status)}">${T.status[n.status] || fmt(n.status)}</span>${n.step ? ` &nbsp;<span style="color:var(--muted)">${fmt(n.step)}</span>` : ""}</p>
+        ${n.note ? `<h3>${T.finding}${n.checked ? " · " + fmt(n.checked) : ""}</h3><div class="note">${fmtBlock(n.note)}</div>` : ""}
+        ${n.caveat ? `<p class="muted-note" style="margin-top:8px">${fmt(n.caveat)}</p>` : ""}
+        ${sources.length ? `<h3>${T.sources}</h3><ul class="sources">${sources.map(s => `<li>${s.url ? `<a href="${attr(s.url)}" target="_blank" rel="noopener">${fmt(s.title || s.url)}</a>` : fmt(s.title)}</li>`).join("")}</ul>` : ""}
+        <h3>${T.answers}</h3>
+        <div class="outs">${n.outs.map((o, i) => `<div class="out${o.stop ? " stop" : ""}${i === chosen ? " chosen" : ""}"><div class="lbl">${fmt(o.label)}${i === chosen ? " · " + T.chosen : ""}</div>` +
+          (o.meaning ? `<div>${fmt(o.meaning)}</div>` : "") +
+          (o.stop ? `<b>${fmt(stopMark(o.stop).replace(/^✗\s*/, ""))}.</b>` : `<div>${T.next} <button type="button" class="linkbtn" data-go="${attr(o.to)}">${nodeName(o.to)}</button></div>`) + `</div>`).join("")}</div>
+        ${(n.check || []).length ? `<h3>${T.checks}</h3><ul>${n.check.map(c => `<li>${fmt(c)}</li>`).join("")}</ul>` : ""}
+        ${n.note ? "" : `<p class="muted-note">${T.allOpen}</p>`}`;
+    }
+  }
+  if (key) panel.insertAdjacentHTML("beforeend", `<p style="margin-top:14px"><button type="button" class="linkbtn" data-back>${T.back}</button></p>`);
+  panel.querySelectorAll("[data-tree]").forEach(b => b.addEventListener("click", () => selectTree(b.dataset.tree)));
+  panel.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => select(b.dataset.go, true)));
+  panel.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", () => { selected = null; world.querySelectorAll(".node.sel").forEach(x => x.classList.remove("sel")); showPanel(); fit(true); }));
+}
+
+// --- pan & zoom ---
+function apply() {
+  world.style.transform = `translate(${view.tx}px, ${view.ty}px) scale(${view.s})`;
+  document.getElementById("zoomval").textContent = Math.round(view.s * 100) + "%";
+}
+function animate() { world.classList.add("animate"); setTimeout(() => world.classList.remove("animate"), 320); }
+function zoomAt(factor, px, py) {
+  const ns = Math.min(3, Math.max(0.15, view.s * factor));
+  view.tx = px - (px - view.tx) * (ns / view.s);
+  view.ty = py - (py - view.ty) * (ns / view.s);
+  view.s = ns; apply();
+}
+function fit(anim) {
+  const r = viewport.getBoundingClientRect(), pad = 30;
+  view.s = Math.max(0.15, Math.min((r.width - pad * 2) / bounds.w, (r.height - pad * 2) / bounds.h, 1.1));
+  view.tx = (r.width - bounds.w * view.s) / 2;
+  view.ty = Math.max(pad, (r.height - bounds.h * view.s) / 2);
+  if (anim) animate();
+  apply();
+}
+function focusOn(info) {
+  const r = viewport.getBoundingClientRect();
+  view.s = Math.max(view.s, 0.85);
+  view.tx = r.width / 2 - (info.gx + info.w / 2) * view.s;
+  view.ty = r.height / 3 - (info.gy + info.h / 2) * view.s;
+  animate(); apply();
+}
+function center() { const r = viewport.getBoundingClientRect(); return [r.width / 2, r.height / 2]; }
+
+const pointers = new Map();
+let drag = null, pinch = null, lastDragEnd = 0;
+function dragGuard() { return Date.now() - lastDragEnd < 250; }
+function local(e) { const r = viewport.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+
+viewport.addEventListener("pointerdown", e => {
+  if (e.button !== 0 && e.pointerType === "mouse") return;
+  pointers.set(e.pointerId, local(e));
+  if (pointers.size === 1) {
+    const p = local(e);
+    drag = { x: p.x, y: p.y, tx: view.tx, ty: view.ty, moved: false, id: e.pointerId };
+  } else if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: view.s, tx: view.tx, ty: view.ty, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+    for (const id of pointers.keys()) { try { viewport.setPointerCapture(id); } catch (err) {} }
+    if (drag) drag.moved = true;
+  }
+});
+viewport.addEventListener("pointermove", e => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, local(e));
+  if (pinch && pointers.size >= 2) {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    const ns = Math.min(3, Math.max(0.15, pinch.s * d / pinch.d));
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const wx = (pinch.mx - pinch.tx) / pinch.s, wy = (pinch.my - pinch.ty) / pinch.s;
+    view.s = ns; view.tx = mx - wx * ns; view.ty = my - wy * ns; apply();
+  } else if (drag && e.pointerId === drag.id) {
+    const p = local(e), dx = p.x - drag.x, dy = p.y - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) > 4) {
+      drag.moved = true; viewport.classList.add("dragging");
+      try { viewport.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    if (drag.moved) { view.tx = drag.tx + dx; view.ty = drag.ty + dy; apply(); }
+  }
+});
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if (drag && drag.moved) lastDragEnd = Date.now();
+  if (pointers.size < 2) pinch = null;
+  if (pointers.size === 1) {
+    const [id, p] = [...pointers.entries()][0];
+    drag = { x: p.x, y: p.y, tx: view.tx, ty: view.ty, moved: true, id };
+  } else if (pointers.size === 0) {
+    drag = null; viewport.classList.remove("dragging");
+  }
+}
+viewport.addEventListener("pointerup", endPointer);
+viewport.addEventListener("pointercancel", endPointer);
+viewport.addEventListener("wheel", e => {
+  e.preventDefault();
+  const p = local(e);
+  if (e.shiftKey) { view.tx -= e.deltaY; apply(); return; }
+  const k = e.ctrlKey ? 0.01 : 0.0015;
+  zoomAt(Math.exp(-e.deltaY * k), p.x, p.y);
+}, { passive: false });
+
+document.getElementById("zoom-in").addEventListener("click", () => zoomAt(1.25, ...center()));
+document.getElementById("zoom-out").addEventListener("click", () => zoomAt(0.8, ...center()));
+document.getElementById("fit").addEventListener("click", () => fit(true));
+document.getElementById("expand").addEventListener("click", () => { collapsed.clear(); store(STORE_KEY, []); render(); fit(true); });
+document.addEventListener("keydown", e => {
+  if (e.target.closest && e.target.closest("input, textarea, button")) return;
+  const step = 60;
+  if (e.key === "+" || e.key === "=") zoomAt(1.2, ...center());
+  else if (e.key === "-" || e.key === "_") zoomAt(1 / 1.2, ...center());
+  else if (e.key === "0") fit(true);
+  else if (e.key === "ArrowLeft") { view.tx += step; apply(); }
+  else if (e.key === "ArrowRight") { view.tx -= step; apply(); }
+  else if (e.key === "ArrowUp") { view.ty += step; apply(); }
+  else if (e.key === "ArrowDown") { view.ty -= step; apply(); }
+  else return;
+  e.preventDefault();
+});
+let resizeTimer;
+window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => fit(false), 150); });
+
+// --- resizable panel: a column on desktop, a bottom sheet on phones ---
+const mainEl = document.querySelector("main");
+const resizer = document.getElementById("resizer");
+const wideBtn = document.getElementById("panel-wide");
+const narrowMq = window.matchMedia("(max-width: 760px)");
+const PANEL_MIN = 280, PANEL_DEFAULT = 360;
+resizer.setAttribute("aria-label", T.resizer);
+resizer.title = T.resizerTip;
+function panelMax() { return narrowMq.matches ? window.innerHeight - 220 : Math.max(PANEL_MIN, mainEl.clientWidth - 320); }
+function setPanel(px, save) {
+  const v = Math.round(Math.min(panelMax(), Math.max(narrowMq.matches ? 140 : PANEL_MIN, px)));
+  mainEl.style.setProperty(narrowMq.matches ? "--panel-h" : "--panel-w", v + "px");
+  const wide = !narrowMq.matches && v > PANEL_DEFAULT + 40;
+  wideBtn.textContent = wide ? T.narrow : T.widen;
+  if (save) store(narrowMq.matches ? "bpt-panel-h" : "bpt-panel-w", v);
+}
+function currentPanel() { return narrowMq.matches ? panel.offsetHeight : panel.parentElement.offsetWidth; }
+function toggleWide() {
+  const wideTarget = narrowMq.matches ? window.innerHeight * 0.7 : Math.min(760, mainEl.clientWidth * 0.55);
+  setPanel(currentPanel() > (narrowMq.matches ? window.innerHeight * 0.5 : PANEL_DEFAULT + 40) ? (narrowMq.matches ? window.innerHeight * 0.42 : PANEL_DEFAULT) : wideTarget, true);
+}
+let rs = null;
+resizer.addEventListener("pointerdown", e => {
+  rs = { x: e.clientX, y: e.clientY, start: currentPanel() };
+  try { resizer.setPointerCapture(e.pointerId); } catch (err) {}
+  resizer.classList.add("active"); e.preventDefault();
+});
+resizer.addEventListener("pointermove", e => {
+  if (!rs) return;
+  setPanel(narrowMq.matches ? rs.start - (e.clientY - rs.y) : rs.start - (e.clientX - rs.x), false);
+});
+function endResize() { if (!rs) return; rs = null; resizer.classList.remove("active"); setPanel(currentPanel(), true); }
+resizer.addEventListener("pointerup", endResize);
+resizer.addEventListener("pointercancel", endResize);
+resizer.addEventListener("dblclick", toggleWide);
+resizer.addEventListener("keydown", e => {
+  const k = narrowMq.matches ? { ArrowUp: 40, ArrowDown: -40 } : { ArrowLeft: 40, ArrowRight: -40 };
+  if (k[e.key]) { setPanel(currentPanel() + k[e.key], true); e.preventDefault(); e.stopPropagation(); }
+});
+wideBtn.addEventListener("click", toggleWide);
+function restorePanel() {
+  resizer.setAttribute("aria-orientation", narrowMq.matches ? "horizontal" : "vertical");
+  const saved = load(narrowMq.matches ? "bpt-panel-h" : "bpt-panel-w");
+  setPanel(saved || (narrowMq.matches ? window.innerHeight * 0.42 : PANEL_DEFAULT), false);
+}
+if (narrowMq.addEventListener) narrowMq.addEventListener("change", restorePanel);
+restorePanel();
+
+if (!DATA || !TREES.length) {
+  document.querySelector("main").innerHTML = `<div class="data-error">${T.badData}</div>`;
+} else {
+  (load(STORE_KEY) || []).forEach(id => NODES[id] && collapsed.add(id));
+  header();
+  summary();
+  render();
+  showPanel();
+  fit(false);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { render(); fit(false); });
+}
+</script>
